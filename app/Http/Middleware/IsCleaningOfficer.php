@@ -10,7 +10,7 @@ class IsCleaningOfficer
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user() || ! $request->user()->hasCleaningAssignment()) {
+        if (! $request->user() || ! $request->user()->isCleaningOfficer()) {
             abort(403);
         }
 

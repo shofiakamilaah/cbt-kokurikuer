@@ -220,6 +220,10 @@ class AssignmentImportController extends Controller
                 } elseif (($row['status'] ?? null) === 'updated') {
                     $updatedCount++;
                 }
+
+                if ($assignment->student) {
+                    \App\Services\DutyAssignmentSyncService::syncForStudent($assignment->student);
+                }
             }
         });
 

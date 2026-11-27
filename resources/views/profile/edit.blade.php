@@ -47,7 +47,39 @@
             @error('email') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
         </div>
 
-        <button type="submit" class="justify-self-start rounded-lg bg-primary px-5 py-3 font-semibold text-white">
+        {{-- Bagian Ubah Password --}}
+        <div class="mt-2 border-t border-slate-200 pt-5">
+            <h3 class="text-base font-bold text-slate-900">Ubah Kata Sandi</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Kosongkan jika kamu tidak ingin mengganti kata sandi saat ini.</p>
+
+            <div class="mt-4 space-y-3.5">
+                <div>
+                    <label for="current_password" class="mb-1 block text-sm font-semibold text-slate-700">Kata Sandi Saat Ini</label>
+                    <input id="current_password" name="current_password" type="password"
+                           placeholder="Masukkan kata sandi lama / bawaan..."
+                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary">
+                    @error('current_password') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div>
+                        <label for="password" class="mb-1 block text-sm font-semibold text-slate-700">Kata Sandi Baru</label>
+                        <input id="password" name="password" type="password" minlength="8"
+                               placeholder="Minimal 8 karakter..."
+                               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary">
+                        @error('password') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="password_confirmation" class="mb-1 block text-sm font-semibold text-slate-700">Konfirmasi Kata Sandi Baru</label>
+                        <input id="password_confirmation" name="password_confirmation" type="password" minlength="8"
+                               placeholder="Ulangi kata sandi baru..."
+                               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="justify-self-start rounded-lg bg-primary px-5 py-3 font-semibold text-white hover:bg-forest transition">
             Simpan Perubahan
         </button>
     </form>

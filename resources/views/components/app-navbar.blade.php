@@ -1,32 +1,42 @@
 <header class="site-header">
     <div @class(['app-navbar-inner', 'has-navigation' => auth()->check()])>
-        <a href="{{ route('home') }}" class="site-brand flex shrink-0 items-center gap-3 font-bold">
-            <span class="brand-mark text-sm font-black">KW</span>
-            <span>Kokurikuler Wikrama</span>
+        <a href="{{ route('home') }}" class="site-brand flex shrink-0 items-center gap-3 font-bold group" title="Kembali ke Beranda">
+            <span class="brand-mark text-sm font-black group-hover:scale-105 transition-transform">KW</span>
+            <span class="group-hover:text-primary transition-colors">Kokurikuler Wikrama</span>
         </a>
 
         @auth
             <nav class="panel-nav" aria-label="Navigasi panel">
-                
                 @if(auth()->user()->isTeacher())
+                    {{-- Navigasi Guru --}}
                     <a href="{{ route('admin.dashboard') }}" @class(['panel-nav-link', 'active' => request()->routeIs('admin.dashboard')])>Dashboard</a>
+                    <a href="{{ route('admin.attendances.index') }}" @class(['panel-nav-link', 'active' => request()->routeIs('admin.attendances.*')])>Absensi Siswa</a>
                     <a href="{{ route('admin.assignments.index') }}" @class(['panel-nav-link', 'active' => request()->routeIs('admin.assignments.*')])>Penugasan</a>
-                @elseif(auth()->user()->isStudent())
-                    @if(auth()->user()->isOfficer())
-                        <a href="{{ route('duty.dashboard') }}" @class(['panel-nav-link', 'active' => request()->routeIs('duty.dashboard')])>Tugas Hari Ini</a>
-                        <a href="{{ route('duty.attendances.index') }}" @class(['panel-nav-link', 'active' => request()->routeIs('duty.attendances.*')])>Absensi Petugas</a>
-                    @endif
 
-                    @if(auth()->user()->hasCleaningAssignment())
+                @elseif(auth()->user()->isStudent())
+                    {{-- Navigasi Siswa: HANYA PETUGAS BERTUGAS HARI INI YANG BISA AKSES PENCATATAN --}}
+                    @if(auth()->user()->isCanteenOfficer())
+                        <a href="{{ route('duty.dashboard') }}" @class(['panel-nav-link', 'active' => request()->routeIs('duty.dashboard')])>Tugas Hari Ini</a>
+                        <a href="{{ route('duty.sales.index') }}" @class(['panel-nav-link', 'active' => request()->routeIs('duty.sales.*')])>
+                            <span class="font-bold text-primary">Pencatatan Penjualan</span>
+                        </a>
+
+                    @elseif(auth()->user()->isCleaningOfficer())
+                        <a href="{{ route('duty.dashboard') }}" @class(['panel-nav-link', 'active' => request()->routeIs('duty.dashboard')])>Tugas Hari Ini</a>
                         <a href="{{ route('duty.floors.index') }}" @class(['panel-nav-link', 'active' => request()->routeIs('duty.floors.*')])>Denah Lantai</a>
-                        <a href="{{ route('duty.toilet.index') }}" @class(['panel-nav-link', 'active' => request()->routeIs('duty.toilet.*')])>Piket Toilet</a>
                         <a href="{{ route('duty.sorted-wastes.index') }}" @class(['panel-nav-link', 'active' => request()->routeIs('duty.sorted-wastes.*')])>Pemilahan Sampah</a>
-                        <a href="{{ route('duty.collections.index') }}" @class(['panel-nav-link', 'active' => request()->routeIs('duty.collections.*')])>Pengumpulan Limbah (Rabu)</a>
                         <a href="{{ route('duty.activities.index') }}" @class(['panel-nav-link', 'active' => request()->routeIs('duty.activities.*')])>Catatan Kegiatan</a>
-                    @elseif(auth()->user()->isToiletOfficer())
+                        <a href="{{ route('duty.collections.index') }}" @class(['panel-nav-link', 'active' => request()->routeIs('duty.collections.*')])>Pengumpulan Limbah</a>
                         <a href="{{ route('duty.toilet.index') }}" @class(['panel-nav-link', 'active' => request()->routeIs('duty.toilet.*')])>Piket Toilet</a>
-                    @elseif(auth()->user()->isCanteenOfficer())
-                        <a href="{{ route('duty.sales.index') }}" @class(['panel-nav-link', 'active' => request()->routeIs('duty.sales.*')])>Pencatatan Penjualan Kantin</a>
+
+                    @else
+                        {{-- Siswa yang tidak bertugas / Siswa Kelas 11 & 12 --}}
+                        {{-- Tidak ada menu pencatatan! --}}
+                        @if(auth()->user()->isSeniorStudent() || auth()->user()->dutyAssignments()->where('task_type', 'toilet_duty')->exists())
+                            <a href="{{ route('profile.index') }}" @class(['panel-nav-link', 'active' => request()->routeIs('profile.*')])>
+                                <span class="font-bold text-primary">Jadwal Piket Toilet</span>
+                            </a>
+                        @endif
                     @endif
                 @endif
             </nav>

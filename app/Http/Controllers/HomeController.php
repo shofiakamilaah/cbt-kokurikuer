@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
-use App\Models\Assignment;
+use App\Models\DutyAssignment;
 use App\Models\DutySchedule;
 use App\Models\Semester;
 use App\Models\SortedWaste;
@@ -18,22 +18,16 @@ class HomeController extends Controller
         $today = today()->toDateString();
 
         $semester = Semester::current();
-        $schedules = DutySchedule::with('classroom')
-            ->whereDate('duty_date', $today)
-            ->get();
 
-        $dutyClassrooms = collect();
-        if ($semester) {
-            $dutyClassrooms = $schedules
-                ->filter(function (DutySchedule $schedule) use ($semester): bool {
-                    return Assignment::where('semester_id', $semester->id)
-                        ->whereHas('student', fn ($query) => $query->where('classroom_id', $schedule->classroom_id))
-                        ->exists();
-                })
-                ->pluck('classroom')
-                ->unique('id')
-                ->values();
-        }
+        // Duty classrooms: distinct classrooms from today's duty-task assignments
+        $dutyClassrooms = DutyAssignment::with('user.classroom')
+            ->whereDate('assignment_date', $today)
+            ->whereIn('task_type', ['cleaning', 'toilet_officer', 'canteen'])
+            ->get()
+            ->pluck('user.classroom')
+            ->filter()
+            ->unique('id')
+            ->values();
 
         $sortedWasteTotal = (float) SortedWaste::query()
             ->get(['organic_weight', 'inorganic_weight', 'residue_weight'])
@@ -44,8 +38,8 @@ class HomeController extends Controller
 
         $student = $request->user();
         $isStudent = $student?->isStudent() ?? false;
-        $todayAssignment = $isStudent && $student->isOnDutyToday()
-            ? $student->currentAssignment()
+        $todayAssignment = $isStudent
+            ? $student->todayAssignment()
             : null;
         $reminderAssignments = $isStudent
             ? $student->reminderAssignments()

@@ -22,11 +22,16 @@
         };
     </script>
 </head>
-<body class="app-body min-h-screen text-slate-800">
-    <x-app-navbar />
-    <main class="app-main mx-auto">
-        @include('partials.flash')
-        @yield('content')
-    </main>
+<body id="top" class="app-body flex min-h-screen flex-col justify-between text-slate-800">
+    <div class="flex-1">
+        <x-app-navbar />
+        <main class="app-main mx-auto">
+            @include('partials.flash')
+            @yield('content')
+        </main>
+    </div>
+    @if(request()->routeIs('home'))
+        <x-app-footer />
+    @endif
 </body>
 </html>

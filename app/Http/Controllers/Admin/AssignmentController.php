@@ -41,7 +41,7 @@ class AssignmentController extends Controller
             'semesters' => Semester::orderByDesc('start_date')->get(),
             'currentSemester' => $currentSemester,
             'taskLabels' => Assignment::TYPES,
-            'gradeTenClassrooms' => Classroom::where('grade_level', 10)->orderBy('name')->get(),
+            'gradeTenClassrooms' => Classroom::where('grade_level', 10)->withCount('users')->orderBy('name')->get(),
             'classroomCards' => $classroomCards,
         ]);
     }
@@ -82,11 +82,12 @@ class AssignmentController extends Controller
 
                 $dailyCount = DutySchedule::whereDate('duty_date', $date)->count();
                 if (! $hasDuplicate && $dailyCount < 2) {
-                    DutySchedule::create([
+                    $dutySchedule = DutySchedule::create([
                         'classroom_id' => $classroom->id,
                         'semester_id' => $semester->id,
                         'duty_date' => $date->toDateString(),
                     ]);
+                    \App\Services\DutyAssignmentSyncService::syncForClassroomSchedule($classroom, $dutySchedule);
                     $created++;
                 }
             }

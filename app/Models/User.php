@@ -60,15 +60,15 @@ class User extends Authenticatable
         $semester = Semester::current();
 
         if (! $semester) {
-            return null;
+            return $this->semesterAssignments()->latest()->first();
         }
 
         return $this->semesterAssignments()
             ->where('semester_id', $semester->id)
-            ->first();
+            ->first() ?? $this->semesterAssignments()->latest()->first();
     }
 
-    // ── Role helpers ──
+    // ── Role & Grade helpers ──
 
     public function isTeacher(): bool
     {
@@ -80,18 +80,23 @@ class User extends Authenticatable
         return $this->role === 'student';
     }
 
-    // ── Today's assignment helpers ──
-
-    public function isOnDutyToday(): bool
+    public function isGrade10(): bool
     {
-        if (! $this->classroom_id || (int) $this->classroom?->grade_level !== 10) {
-            return false;
+        return (int) ($this->classroom?->grade_level ?? 0) === 10;
+    }
+
+    public function isSeniorStudent(): bool
+    {
+        $grade = (int) ($this->classroom?->grade_level ?? 0);
+        if ($grade === 11 || $grade === 12) {
+            return true;
         }
 
-        return DutySchedule::whereDate('duty_date', today())
-            ->where('classroom_id', $this->classroom_id)
-            ->exists();
+        $name = $this->classroom?->name ?? '';
+        return str_contains($name, 'XI') || str_contains($name, 'XII');
     }
+
+    // ── Today's assignment helpers (STRICT FOR TODAY ONLY) ──
 
     public function todayAssignment(): ?DutyAssignment
     {
@@ -100,33 +105,86 @@ class User extends Authenticatable
             ->first();
     }
 
-    public function hasCleaningAssignment(): bool
-    {
-        return $this->isStudent()
-            && $this->currentAssignment()?->assignment_type === 'cleaning';
-    }
-
     public function isCleaningOfficer(): bool
     {
-        return $this->isOnDutyToday() && $this->hasCleaningAssignment();
+        if (! $this->isStudent() || $this->isSeniorStudent()) {
+            return false;
+        }
+
+        $today = $this->todayAssignment();
+
+        return $today !== null && in_array($today->task_type, ['cleaning', 'toilet_officer']);
     }
 
     public function isToiletOfficer(): bool
     {
-        $assignment = $this->todayAssignment();
-
-        return $assignment !== null && $assignment->task_type === 'toilet_officer';
+        return $this->isCleaningOfficer();
     }
 
     public function isCanteenOfficer(): bool
     {
-        return $this->isOnDutyToday()
-            && $this->currentAssignment()?->assignment_type === 'canteen';
+        if (! $this->isStudent() || $this->isSeniorStudent()) {
+            return false;
+        }
+
+        $today = $this->todayAssignment();
+
+        return $today !== null && $today->task_type === 'canteen';
     }
 
     public function isOfficer(): bool
     {
-        return $this->isCleaningOfficer() || $this->isToiletOfficer() || $this->isCanteenOfficer();
+        return $this->isCleaningOfficer() || $this->isCanteenOfficer();
+    }
+
+    public function isOnDutyToday(): bool
+    {
+        return $this->isOfficer();
+    }
+
+    public function hasCleaningAssignment(): bool
+    {
+        return $this->isCleaningOfficer();
+    }
+
+    // ── Toilet Duty Helpers (For any student, including Grade 11 & 12) ──
+
+    public function todayToiletDuty(): ?DutyAssignment
+    {
+        return $this->dutyAssignments()
+            ->whereDate('assignment_date', today()->toDateString())
+            ->where('task_type', 'toilet_duty')
+            ->with('floor')
+            ->first();
+    }
+
+    public function upcomingToiletDuties()
+    {
+        return $this->dutyAssignments()
+            ->where('task_type', 'toilet_duty')
+            ->whereDate('assignment_date', '>=', today()->toDateString())
+            ->orderBy('assignment_date')
+            ->with('floor')
+            ->get();
+    }
+
+    public function assignedCanteen(): ?Canteen
+    {
+        if ($this->todayAssignment()?->canteen) {
+            return $this->todayAssignment()->canteen;
+        }
+
+        $duty = $this->dutyAssignments()
+            ->where('task_type', 'canteen')
+            ->whereNotNull('canteen_id')
+            ->latest('assignment_date')
+            ->first();
+
+        if ($duty && $duty->canteen) {
+            return $duty->canteen;
+        }
+
+        return Canteen::first();
     }
 
     /**
@@ -137,27 +195,11 @@ class User extends Authenticatable
     {
         $start = today();
         $end = today()->addWeekday();
-        $semester = Semester::current();
 
-        if (! $this->classroom_id || ! $semester) {
-            return collect();
-        }
-
-        $assignment = $this->currentAssignment();
-        if (! $assignment) {
-            return collect();
-        }
-
-        return DutySchedule::where('classroom_id', $this->classroom_id)
-            ->whereBetween('duty_date', [$start->toDateString(), $end->toDateString()])
-            ->orderBy('duty_date')
-            ->get()
-            ->map(function (DutySchedule $schedule) use ($assignment) {
-                return (object) [
-                    'task_label' => $assignment->type_label,
-                    'location_name' => '-',
-                    'assignment_date' => $schedule->duty_date,
-                ];
-            });
+        return $this->dutyAssignments()
+            ->whereBetween('assignment_date', [$start->toDateString(), $end->toDateString()])
+            ->orderBy('assignment_date')
+            ->with(['floor', 'canteen'])
+            ->get();
     }
 }

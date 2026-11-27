@@ -14,6 +14,7 @@ class CanteenSale extends Model
         'item_name',
         'quantity',
         'price',
+        'initial_stock',
     ];
 
     protected function casts(): array
@@ -22,12 +23,18 @@ class CanteenSale extends Model
             'sale_date' => 'date',
             'quantity' => 'integer',
             'price' => 'integer',
+            'initial_stock' => 'integer',
         ];
     }
 
     public function getTotalAttribute(): int
     {
-        return $this->quantity * $this->price;
+        return (int) $this->quantity * (int) $this->price;
+    }
+
+    public function getRemainingStockAttribute(): int
+    {
+        return max(0, (int) $this->initial_stock - (int) $this->quantity);
     }
 
     public function user(): BelongsTo

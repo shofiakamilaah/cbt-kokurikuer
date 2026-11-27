@@ -48,7 +48,8 @@
         @if($todayAssignment)
             <article class="mt-4 rounded-xl bg-gradient-to-br from-forest to-primary p-6 text-white">
                 <p class="text-sm font-semibold text-white/75">Tugas hari ini</p>
-                <h3 class="mt-2 text-2xl font-bold">{{ $todayAssignment->type_label }}</h3>
+                <h3 class="mt-2 text-2xl font-bold">{{ $todayAssignment->task_label }}</h3>
+            <p class="mt-1 text-sm text-white/80">{{ $todayAssignment->location_name }}</p>
             </article>
         @endif
         @if($myTasks->isEmpty())

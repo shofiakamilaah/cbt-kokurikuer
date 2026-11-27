@@ -10,9 +10,7 @@ class IsToiletOfficer
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
-
-        if (! $user || (! $user->hasCleaningAssignment() && ! $user->isToiletOfficer())) {
+        if (! $request->user() || ! $request->user()->isCleaningOfficer()) {
             abort(403);
         }
 

@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\Admin\AssignmentController;
 use App\Http\Controllers\Admin\AssignmentImportController;
+use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
+use App\Http\Controllers\Admin\ClassroomController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Duty\ActivityLogController;
-use App\Http\Controllers\Duty\AttendanceController;
 use App\Http\Controllers\Duty\CanteenSaleController;
 use App\Http\Controllers\Duty\CollectionController;
 use App\Http\Controllers\Duty\DashboardController as DutyDashboardController;
@@ -44,13 +46,6 @@ Route::prefix('duty')
         Route::get('/dashboard', [DutyDashboardController::class, 'index'])
             ->middleware('on.duty')
             ->name('dashboard');
-
-        Route::get('/attendances', [AttendanceController::class, 'index'])
-            ->middleware('on.duty')
-            ->name('attendances.index');
-        Route::post('/attendances', [AttendanceController::class, 'store'])
-            ->middleware('on.duty')
-            ->name('attendances.store');
 
         Route::get('/floors', [FloorMapController::class, 'index'])
             ->middleware('cleaning.officer')
@@ -91,14 +86,20 @@ Route::prefix('duty')
             ->name('sales.destroy');
 
         Route::get('/toilet', [ToiletDutyController::class, 'index'])
-            ->middleware('toilet.officer')
+            ->middleware('cleaning.officer')
             ->name('toilet.index');
         Route::get('/toilet/student-lookup', [ToiletDutyController::class, 'studentLookup'])
-            ->middleware('toilet.officer')
+            ->middleware('cleaning.officer')
             ->name('toilet.student-lookup');
-        Route::post('/toilet/replacement', [ToiletDutyController::class, 'replacement'])
-            ->middleware('toilet.officer')
+        Route::post('/toilet/record', [ToiletDutyController::class, 'recordCleaning'])
+            ->middleware('cleaning.officer')
+            ->name('toilet.record');
+        Route::post('/toilet/replacement', [ToiletDutyController::class, 'recordCleaning'])
+            ->middleware('cleaning.officer')
             ->name('toilet.replacement');
+        Route::post('/toilet/{assignment}/toggle', [ToiletDutyController::class, 'toggle'])
+            ->middleware('cleaning.officer')
+            ->name('toilet.toggle');
     });
 
 Route::prefix('admin')
@@ -106,6 +107,9 @@ Route::prefix('admin')
     ->middleware(['auth', 'teacher'])
     ->group(function (): void {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/attendances', [AdminAttendanceController::class, 'index'])->name('attendances.index');
+        Route::post('/attendances', [AdminAttendanceController::class, 'store'])->name('attendances.store');
 
         Route::get('/assignments/template', [AssignmentImportController::class, 'template'])->name('assignments.template');
         Route::get('/assignments/import', [AssignmentImportController::class, 'create'])->name('assignments.import.create');
@@ -116,4 +120,10 @@ Route::prefix('admin')
         Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
         Route::post('/assignments/schedule', [AssignmentController::class, 'generateSchedule'])->name('assignments.schedule');
         Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
+
+        Route::post('/students', [StudentController::class, 'store'])->name('students.store');
+        Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
+
+        Route::post('/classrooms', [ClassroomController::class, 'store'])->name('classrooms.store');
+        Route::delete('/classrooms/{classroom}', [ClassroomController::class, 'destroy'])->name('classrooms.destroy');
     });
